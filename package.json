@@ -1,0 +1,22 @@
+{
+  "name": "qc-cypress-demo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "serve:mock": "serve demo-mock-app -l 4173",
+    "cy:run": "cypress run",
+    "cy:open": "cypress open"
+  },
+  "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^20.0.1",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.2",
+    "cypress": "^13.15.0",
+    "serve": "^14.2.3"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": [
+      "cypress/e2e/[filepath].js",
+      "cypress/e2e/[filepath]/*.js"
+    ]
+  }
+}

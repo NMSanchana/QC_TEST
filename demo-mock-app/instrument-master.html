@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Instrument Master (mock)</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 560px; margin: 40px auto; color: #1a1a1a; }
+  h1 { font-size: 18px; font-weight: 600; }
+  .field { margin-bottom: 14px; }
+  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select { width: 100%; height: 32px; padding: 0 8px; box-sizing: border-box; }
+  .radio-group label, .checkbox-group label { display: inline-block; margin-right: 14px; font-weight: normal; }
+  .actions { margin-top: 20px; display: flex; gap: 8px; }
+  button { height: 34px; padding: 0 14px; cursor: pointer; }
+
+  /* Mimics the real app's Material dialog class so Common.VerifyFormValidationMessage
+     can target it the same way it would against the real ERP. */
+  .mat-mdc-dialog-component-host {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 16px;
+    border: 1px solid #c9c9c9;
+    background: #fafafa;
+  }
+  .mat-mdc-dialog-component-host.visible { display: block; }
+
+  #SavedRecordsList { margin-top: 24px; border-top: 1px solid #ddd; padding-top: 12px; }
+  #SavedRecordsList .row { padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #eee; }
+  #SavedRecordsList .row:hover { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1 data-cy="PageTitle">Financial &rsaquo; Instrument Master</h1>
+
+<div class="field">
+  <label>Name</label>
+  <input type="text" data-cy="InstrumentName" />
+</div>
+
+<div class="field">
+  <label>Instrument Type</label>
+  <select data-cy="InstrumentType">
+    <option value="">-- select --</option>
+    <option>Cash</option>
+    <option>Demand Draft</option>
+    <option>Cheque</option>
+  </select>
+</div>
+
+<div class="field">
+  <label>Account Name</label>
+  <select data-cy="AccountName">
+    <option value="">-- select --</option>
+    <option>Customer Control Account</option>
+    <option>Supplier Control Account</option>
+  </select>
+</div>
+
+<div class="field">
+  <label>Account Post Type</label>
+  <div class="radio-group" data-cy="InstrumentAccountPostType">
+    <label><input type="radio" name="postType" value="OnDeposit" /> OnDeposit</label>
+    <label><input type="radio" name="postType" value="OnClearance" /> OnClearance</label>
+  </div>
+</div>
+
+<div class="field">
+  <label>Post Dated Type</label>
+  <div class="radio-group" data-cy="InstrumentPostDatedType">
+    <label><input type="radio" name="postDated" value="Immediate" /> Immediate</label>
+    <label><input type="radio" name="postDated" value="PostDated" /> PostDated</label>
+  </div>
+</div>
+
+<div class="field">
+  <label>Validity period (days)</label>
+  <input type="number" data-cy="InstrumentValidityPeriodInDays" />
+</div>
+
+<div class="field">
+  <label>Status</label>
+  <div class="radio-group" data-cy="InstrumentStatusOfInstrument">
+    <label><input type="radio" name="status" value="Pending" /> Pending</label>
+    <label><input type="radio" name="status" value="Active" /> Active</label>
+  </div>
+</div>
+
+<div class="field">
+  <label>OU names</label>
+  <div class="checkbox-group" data-cy="InstrumentOuNames">
+    <label><input type="checkbox" value="GoodBooks Technologies Pvt Ltd.(Demo)" /> GoodBooks Technologies Pvt Ltd.(Demo)</label>
+  </div>
+</div>
+
+<div class="field">
+  <label>OU group names</label>
+  <div class="checkbox-group" data-cy="InstrumentOuGroupNames">
+    <label><input type="checkbox" value="GROUP01" /> GROUP01</label>
+  </div>
+</div>
+
+<div class="actions">
+  <button data-cy="Save">Save</button>
+  <button data-cy="Update">Update</button>
+  <button data-cy="Delete">Delete</button>
+</div>
+
+<div class="mat-mdc-dialog-component-host" data-cy="ValidationDialog"></div>
+
+<div id="SavedRecordsList" data-cy="SavedRecordsList"></div>
+
+<script>
+  function loadRecords() {
+    try {
+      return JSON.parse(localStorage.getItem('instrumentRecords') || '[]');
+    } catch {
+      return [];
+    }
+  }
+  function saveRecords(records) {
+    localStorage.setItem('instrumentRecords', JSON.stringify(records));
+  }
+
+  const state = { records: loadRecords(), selectedIndex: null };
+
+  const $ = (sel) => document.querySelector(sel);
+  const nameInput = $('[data-cy="InstrumentName"]');
+  const typeSelect = $('[data-cy="InstrumentType"]');
+  const accountSelect = $('[data-cy="AccountName"]');
+  const validityInput = $('[data-cy="InstrumentValidityPeriodInDays"]');
+  const dialog = $('[data-cy="ValidationDialog"]');
+  const list = $('#SavedRecordsList');
+
+  function showMessage(text) {
+    dialog.textContent = text;
+    dialog.classList.add('visible');
+  }
+
+  function renderList() {
+    list.innerHTML = state.records
+      .map((r, i) => `<div class="row" data-cy="SavedRecord-${r.name}" data-index="${i}">${r.name} (${r.type})</div>`)
+      .join('');
+    list.querySelectorAll('.row').forEach((row) => {
+      row.addEventListener('click', () => {
+        const idx = Number(row.dataset.index);
+        state.selectedIndex = idx;
+        const r = state.records[idx];
+        nameInput.value = r.name;
+        typeSelect.value = r.type;
+        accountSelect.value = r.account;
+        validityInput.value = r.validity;
+      });
+    });
+  }
+  renderList();
+
+  $('[data-cy="Save"]').addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    const account = accountSelect.value;
+    const errors = [];
+    if (!name) errors.push('Name* Should not be Empty');
+    if (!account) errors.push('Account* Should not be Empty');
+
+    if (errors.length) {
+      showMessage(errors.join(' , '));
+      return;
+    }
+
+    state.records.push({
+      name,
+      type: typeSelect.value,
+      account,
+      validity: validityInput.value,
+    });
+    saveRecords(state.records);
+    renderList();
+    showMessage('Details Saved Successfully');
+  });
+
+  $('[data-cy="Update"]').addEventListener('click', () => {
+    if (state.selectedIndex === null) {
+      showMessage('Select a record first');
+      return;
+    }
+    state.records[state.selectedIndex] = {
+      ...state.records[state.selectedIndex],
+      validity: validityInput.value,
+    };
+    saveRecords(state.records);
+    renderList();
+    showMessage('Details Saved Successfully');
+  });
+
+  $('[data-cy="Delete"]').addEventListener('click', () => {
+    if (state.selectedIndex === null) {
+      showMessage('Select a record first');
+      return;
+    }
+    state.records.splice(state.selectedIndex, 1);
+    state.selectedIndex = null;
+    saveRecords(state.records);
+    renderList();
+    showMessage('Details Deleted Successfully');
+  });
+</script>
+
+</body>
+</html>

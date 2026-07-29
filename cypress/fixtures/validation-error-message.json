@@ -1,0 +1,10 @@
+{
+  "InstrumentMasterErrorMessages": {
+    "ErrorMessages": [
+      "Name* Should not be Empty",
+      "Account* Should not be Empty",
+      "Details Saved Successfully",
+      "Details Deleted Successfully"
+    ]
+  }
+}
